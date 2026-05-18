@@ -1,0 +1,59 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://treg.foo/schemas/sync-request.schema.json",
+  "title": "Treg Calendar Sync Request",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["client_id", "mutations"],
+  "properties": {
+    "client_id": {
+      "type": "string",
+      "format": "uuid"
+    },
+    "last_sync_cursor": {
+      "type": ["string", "null"],
+      "format": "date-time"
+    },
+    "mutations": {
+      "type": "array",
+      "maxItems": 100,
+      "items": {
+        "$ref": "#/$defs/mutation"
+      }
+    }
+  },
+  "$defs": {
+    "mutation": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["client_mutation_id", "entity_type", "operation", "payload"],
+      "properties": {
+        "client_mutation_id": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "entity_type": {
+          "const": "event"
+        },
+        "operation": {
+          "enum": ["create", "update", "delete"]
+        },
+        "entity_remote_id": {
+          "type": ["string", "null"],
+          "format": "uuid"
+        },
+        "entity_local_id": {
+          "type": ["string", "null"],
+          "format": "uuid"
+        },
+        "base_remote_updated_at": {
+          "type": ["string", "null"],
+          "format": "date-time"
+        },
+        "payload": {
+          "type": "object"
+        }
+      }
+    }
+  }
+}
