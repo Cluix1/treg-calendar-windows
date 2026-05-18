@@ -28,6 +28,7 @@ namespace TregCalendar
         public MainWindow()
         {
             InitializeComponent();
+            ViewModeInput.SelectedIndex = 2;
             EventDateInput.Date = DateTimeOffset.Now;
             EventTimeInput.Time = DateTimeOffset.Now.TimeOfDay;
             _syncTimer = DispatcherQueue.CreateTimer();
@@ -298,6 +299,11 @@ namespace TregCalendar
 
         private void RefreshCalendarSurface()
         {
+            if (CalendarDaysGrid is null || EventsList is null || RangeTitleText is null || EventsHeadingText is null)
+            {
+                return;
+            }
+
             var days = BuildCalendarDays();
             var agendaEvents = FilterAgendaEvents()
                 .Select(EventListItem.FromEvent)

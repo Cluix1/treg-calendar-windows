@@ -120,7 +120,6 @@
                 <ComboBox
                     x:Name="ViewModeInput"
                     Grid.Column="4"
-                    SelectedIndex="2"
                     SelectionChanged="OnViewModeChanged">
                     <ComboBoxItem Content="Day" />
                     <ComboBoxItem Content="Week" />
