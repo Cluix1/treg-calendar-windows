@@ -48,6 +48,8 @@ Use Supabase Auth. Store tokens using Windows secure storage, not plain text fil
 
 The first version can use an embedded auth flow if it keeps session tokens in OS-protected storage. If the embedded auth flow becomes fragile, use the system browser with a custom redirect URI.
 
+The sync service already depends on `IAccessTokenProvider`. The next auth implementation should satisfy that interface by reading the current Supabase access token from OS-protected storage.
+
 ## Security Rules
 
 - Do not store Supabase service-role keys in the app.

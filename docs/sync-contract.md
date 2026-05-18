@@ -86,6 +86,13 @@ Native clients should eventually call a Supabase Edge Function instead of writin
 5. Apply mutations transactionally.
 6. Return accepted mutation IDs and changed remote events since `last_sync_cursor`.
 
+The Windows client implementation for this lives in:
+
+- `TregCalendar/Remote/NativeSyncClient.cs`
+- `TregCalendar/Sync/CalendarSyncService.cs`
+
+The sync client does not store auth tokens. It depends on `IAccessTokenProvider`; the login implementation must provide tokens from Windows secure storage.
+
 ## Initial API Shape
 
 ```json

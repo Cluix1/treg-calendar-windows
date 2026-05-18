@@ -40,6 +40,12 @@ The first local sync foundation is in place:
 - Local event writes can be saved with a pending mutation in the same SQLite transaction.
 - Pending mutations can be read in sync-sized batches, marked accepted, or marked failed for retry visibility.
 
+The first sync service slice is also in place:
+
+- `NativeSyncClient` posts queued mutations to the deployed Supabase Edge Function.
+- `CalendarSyncService` tracks a stable native client ID, sends pending mutations, applies accepted mutations, records conflicts/errors, stores `last_sync_cursor`, and merges returned remote events into SQLite.
+- A real Supabase login/token provider is still required before live account sync can run.
+
 ## Docs
 
 - [Architecture](docs/architecture.md)

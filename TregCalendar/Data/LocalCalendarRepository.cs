@@ -148,8 +148,24 @@ public sealed class LocalCalendarRepository
         IEnumerable<Guid> clientMutationIds,
         CancellationToken cancellationToken = default)
     {
-        var ids = clientMutationIds.Distinct().ToArray();
-        if (ids.Length == 0)
+        var acceptedMutations = clientMutationIds
+            .Distinct()
+            .Select(clientMutationId => new AcceptedMutation { ClientMutationId = clientMutationId })
+            .ToArray();
+
+        await MarkMutationsAcceptedAsync(acceptedMutations, cancellationToken);
+    }
+
+    public async Task MarkMutationsAcceptedAsync(
+        IEnumerable<AcceptedMutation> acceptedMutations,
+        CancellationToken cancellationToken = default)
+    {
+        var mutations = acceptedMutations
+            .GroupBy(mutation => mutation.ClientMutationId)
+            .Select(group => group.First())
+            .ToArray();
+
+        if (mutations.Length == 0)
         {
             return;
         }
@@ -157,7 +173,7 @@ public sealed class LocalCalendarRepository
         await using var connection = await _database.OpenConnectionAsync(cancellationToken);
         await using var transaction = await connection.BeginTransactionAsync(cancellationToken);
 
-        foreach (var clientMutationId in ids)
+        foreach (var acceptedMutation in mutations)
         {
             Guid? entityLocalId = null;
 
@@ -165,7 +181,7 @@ public sealed class LocalCalendarRepository
             {
                 lookup.Transaction = (SqliteTransaction)transaction;
                 lookup.CommandText = "SELECT entity_local_id FROM pending_mutations WHERE client_mutation_id = $clientMutationId;";
-                lookup.Parameters.AddWithValue("$clientMutationId", clientMutationId.ToString());
+                lookup.Parameters.AddWithValue("$clientMutationId", acceptedMutation.ClientMutationId.ToString());
 
                 var value = await lookup.ExecuteScalarAsync(cancellationToken);
                 if (value is string rawId && Guid.TryParse(rawId, out var parsedId))
@@ -178,7 +194,7 @@ public sealed class LocalCalendarRepository
             {
                 delete.Transaction = (SqliteTransaction)transaction;
                 delete.CommandText = "DELETE FROM pending_mutations WHERE client_mutation_id = $clientMutationId;";
-                delete.Parameters.AddWithValue("$clientMutationId", clientMutationId.ToString());
+                delete.Parameters.AddWithValue("$clientMutationId", acceptedMutation.ClientMutationId.ToString());
                 await delete.ExecuteNonQueryAsync(cancellationToken);
             }
 
@@ -192,10 +208,13 @@ public sealed class LocalCalendarRepository
             update.CommandText =
                 """
                 UPDATE local_events
-                SET sync_state = CASE WHEN deleted_at IS NULL THEN 'synced' ELSE 'deleted' END
+                SET
+                    id = COALESCE($remoteId, id),
+                    sync_state = CASE WHEN deleted_at IS NULL THEN 'synced' ELSE 'deleted' END
                 WHERE local_id = $localId;
                 """;
             update.Parameters.AddWithValue("$localId", entityLocalId.Value.ToString());
+            update.Parameters.AddWithValue("$remoteId", ToDbValue(acceptedMutation.RemoteId));
             await update.ExecuteNonQueryAsync(cancellationToken);
         }
 
@@ -230,8 +249,9 @@ public sealed class LocalCalendarRepository
     {
         await using var connection = await _database.OpenConnectionAsync(cancellationToken);
         await using var transaction = await connection.BeginTransactionAsync(cancellationToken);
+        var localId = await ResolveLocalIdForRemoteEventAsync(connection, transaction, remoteEvent, cancellationToken);
 
-        if (await HasPendingMutationAsync(connection, transaction, remoteEvent.LocalId, cancellationToken))
+        if (await HasPendingMutationAsync(connection, transaction, localId, cancellationToken))
         {
             await transaction.CommitAsync(cancellationToken);
             return;
@@ -239,6 +259,7 @@ public sealed class LocalCalendarRepository
 
         var syncedEvent = remoteEvent with
         {
+            LocalId = localId,
             LocalUpdatedAt = DateTimeOffset.UtcNow,
             SyncState = remoteEvent.DeletedAt is null ? EventSyncState.Synced : EventSyncState.Deleted
         };
@@ -410,6 +431,28 @@ public sealed class LocalCalendarRepository
         command.CommandText = "SELECT 1 FROM pending_mutations WHERE entity_local_id = $entityLocalId LIMIT 1;";
         command.Parameters.AddWithValue("$entityLocalId", entityLocalId.ToString());
         return await command.ExecuteScalarAsync(cancellationToken) is not null;
+    }
+
+    private static async Task<Guid> ResolveLocalIdForRemoteEventAsync(
+        SqliteConnection connection,
+        System.Data.Common.DbTransaction transaction,
+        LocalCalendarEvent remoteEvent,
+        CancellationToken cancellationToken)
+    {
+        if (remoteEvent.RemoteId is null)
+        {
+            return remoteEvent.LocalId;
+        }
+
+        await using var command = connection.CreateCommand();
+        command.Transaction = (SqliteTransaction)transaction;
+        command.CommandText = "SELECT local_id FROM local_events WHERE id = $remoteId LIMIT 1;";
+        command.Parameters.AddWithValue("$remoteId", remoteEvent.RemoteId.Value.ToString());
+
+        var value = await command.ExecuteScalarAsync(cancellationToken);
+        return value is string rawId && Guid.TryParse(rawId, out var parsedId)
+            ? parsedId
+            : remoteEvent.LocalId;
     }
 
     private static void AddEventParameters(SqliteCommand command, LocalCalendarEvent calendarEvent)
