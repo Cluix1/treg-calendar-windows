@@ -31,6 +31,14 @@ TregCalendar.Remote
   Supabase REST or Edge Function sync client
 ```
 
+## Web Parity
+
+The Windows app should feel like the native version of the existing web calendar, not a separate product. Keep these pieces aligned unless there is a deliberate platform-specific reason to diverge:
+
+- Account and data backend: same Supabase project, Auth users, Postgres event rows, and `sync-native-calendar` Edge Function.
+- Sync contract: same event shape, mutation queue semantics, conflict response, and cursor behavior that macOS will reuse later.
+- Visual direction: port the web app's default warm/off-white surfaces, muted taupe borders, and green accent into WinUI controls.
+
 The current WinUI shell is intentionally compact: it has day/week/month range navigation, an agenda panel, quick local editing controls, and sync status. Future UI work should split this into dedicated view models and pages once the behavior settles.
 
 ## Offline Model

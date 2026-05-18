@@ -13,233 +13,316 @@
         <MicaBackdrop />
     </Window.SystemBackdrop>
 
-    <Grid Padding="24" RowSpacing="18">
+    <Grid Background="#F3F1E8" Padding="24" RowSpacing="18">
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto" />
             <RowDefinition Height="*" />
         </Grid.RowDefinitions>
 
-        <Grid ColumnSpacing="18">
-            <Grid.ColumnDefinitions>
-                <ColumnDefinition Width="*" />
-                <ColumnDefinition Width="420" />
-            </Grid.ColumnDefinitions>
-
-            <StackPanel Spacing="4" VerticalAlignment="Center">
-                <TextBlock
-                    Text="Treg Calendar"
-                    FontSize="28"
-                    FontWeight="SemiBold" />
-                <TextBlock
-                    x:Name="OfflineStoreStatusText"
-                    Text="Preparing offline calendar storage..."
-                    Opacity="0.72" />
-                <TextBlock
-                    x:Name="AuthStatusText"
-                    Text="Not signed in."
-                    TextWrapping="Wrap"
-                    Opacity="0.72" />
-                <TextBlock
-                    x:Name="SyncStatusText"
-                    Text="Sync idle."
-                    TextWrapping="Wrap"
-                    Opacity="0.72" />
-            </StackPanel>
-
-            <StackPanel Grid.Column="1" Spacing="8">
-                <Grid ColumnSpacing="8">
-                    <Grid.ColumnDefinitions>
-                        <ColumnDefinition Width="*" />
-                        <ColumnDefinition Width="*" />
-                    </Grid.ColumnDefinitions>
-                    <TextBox
-                        x:Name="EmailInput"
-                        Header="Email"
-                        PlaceholderText="you@school.edu" />
-                    <PasswordBox
-                        x:Name="PasswordInput"
-                        Grid.Column="1"
-                        Header="Password"
-                        PlaceholderText="Password" />
-                </Grid>
-                <StackPanel Orientation="Horizontal" Spacing="8" HorizontalAlignment="Right">
-                    <Button
-                        x:Name="SignInButton"
-                        Content="Log in"
-                        Click="OnSignInClicked" />
-                    <Button
-                        x:Name="SyncButton"
-                        Content="Sync"
-                        Click="OnSyncClicked" />
-                    <Button
-                        x:Name="SignOutButton"
-                        Content="Log out"
-                        Click="OnSignOutClicked" />
-                </StackPanel>
-            </StackPanel>
-        </Grid>
-
-        <Grid Grid.Row="1" RowSpacing="10">
-            <Grid.RowDefinitions>
-                <RowDefinition Height="Auto" />
-                <RowDefinition Height="Auto" />
-                <RowDefinition Height="*" />
-            </Grid.RowDefinitions>
-
-            <Grid ColumnSpacing="8">
+        <Border
+            Background="#FFFEFA"
+            BorderBrush="#D9D2C2"
+            BorderThickness="1"
+            CornerRadius="8"
+            Padding="18">
+            <Grid ColumnSpacing="18">
                 <Grid.ColumnDefinitions>
-                    <ColumnDefinition Width="Auto" />
-                    <ColumnDefinition Width="Auto" />
-                    <ColumnDefinition Width="Auto" />
                     <ColumnDefinition Width="*" />
-                    <ColumnDefinition Width="160" />
-                    <ColumnDefinition Width="Auto" />
-                </Grid.ColumnDefinitions>
-                <Button
-                    x:Name="PreviousRangeButton"
-                    Content="Previous"
-                    Click="OnPreviousRangeClicked" />
-                <Button
-                    x:Name="TodayButton"
-                    Grid.Column="1"
-                    Content="Today"
-                    Click="OnTodayClicked" />
-                <Button
-                    x:Name="NextRangeButton"
-                    Grid.Column="2"
-                    Content="Next"
-                    Click="OnNextRangeClicked" />
-                <TextBlock
-                    x:Name="RangeTitleText"
-                    Grid.Column="3"
-                    Text="Calendar"
-                    FontSize="18"
-                    FontWeight="SemiBold"
-                    VerticalAlignment="Center"
-                    HorizontalAlignment="Center" />
-                <ComboBox
-                    x:Name="ViewModeInput"
-                    Grid.Column="4"
-                    SelectionChanged="OnViewModeChanged">
-                    <ComboBoxItem Content="Day" />
-                    <ComboBoxItem Content="Week" />
-                    <ComboBoxItem Content="Month" />
-                </ComboBox>
-                <Button
-                    x:Name="RefreshButton"
-                    Grid.Column="5"
-                    Content="Refresh"
-                    HorizontalAlignment="Right"
-                    Click="OnRefreshClicked" />
-            </Grid>
-
-            <Grid Grid.Row="1" ColumnSpacing="10">
-                <Grid.ColumnDefinitions>
-                    <ColumnDefinition Width="2*" />
-                    <ColumnDefinition Width="Auto" />
-                    <ColumnDefinition Width="Auto" />
-                    <ColumnDefinition Width="Auto" />
-                </Grid.ColumnDefinitions>
-                <TextBox
-                    x:Name="EventTitleInput"
-                    Header="Event"
-                    PlaceholderText="New event title" />
-                <DatePicker
-                    x:Name="EventDateInput"
-                    Grid.Column="1"
-                    Header="Date" />
-                <TimePicker
-                    x:Name="EventTimeInput"
-                    Grid.Column="2"
-                    Header="Time" />
-                <StackPanel Grid.Column="3" Spacing="8" VerticalAlignment="Bottom">
-                    <Button
-                        x:Name="AddEventButton"
-                        Content="Add"
-                        Click="OnAddEventClicked" />
-                    <Button
-                        x:Name="SaveEventButton"
-                        Content="Save title"
-                        Click="OnSaveEventClicked" />
-                    <Button
-                        x:Name="DeleteEventButton"
-                        Content="Delete"
-                        Click="OnDeleteEventClicked" />
-                </StackPanel>
-            </Grid>
-
-            <Grid Grid.Row="2" ColumnSpacing="16">
-                <Grid.ColumnDefinitions>
-                    <ColumnDefinition Width="2*" />
-                    <ColumnDefinition Width="*" />
+                    <ColumnDefinition Width="440" />
                 </Grid.ColumnDefinitions>
 
-                <GridView
-                    x:Name="CalendarDaysGrid"
-                    SelectionMode="Single"
-                    SelectionChanged="OnCalendarDaySelectionChanged">
-                    <GridView.ItemsPanel>
-                        <ItemsPanelTemplate>
-                            <ItemsWrapGrid Orientation="Horizontal" MaximumRowsOrColumns="7" />
-                        </ItemsPanelTemplate>
-                    </GridView.ItemsPanel>
-                    <GridView.ItemTemplate>
-                        <DataTemplate>
-                            <Grid Width="124" Height="104" Padding="10">
-                                <StackPanel Spacing="4">
-                                    <TextBlock Text="{Binding WeekdayText}" Opacity="0.72" />
-                                    <TextBlock Text="{Binding DayText}" FontSize="20" FontWeight="SemiBold" />
-                                    <TextBlock Text="{Binding EventSummaryText}" TextWrapping="Wrap" TextTrimming="CharacterEllipsis" />
-                                    <TextBlock Text="{Binding ToneText}" Opacity="0.62" />
-                                </StackPanel>
-                            </Grid>
-                        </DataTemplate>
-                    </GridView.ItemTemplate>
-                </GridView>
-
-                <Grid Grid.Column="1" RowSpacing="8">
+                <Grid RowSpacing="10" VerticalAlignment="Center">
                     <Grid.RowDefinitions>
                         <RowDefinition Height="Auto" />
-                        <RowDefinition Height="*" />
+                        <RowDefinition Height="Auto" />
                     </Grid.RowDefinitions>
+
+                    <StackPanel Spacing="4">
+                        <TextBlock
+                            Text="Treg Calendar"
+                            FontSize="28"
+                            FontWeight="SemiBold"
+                            Foreground="#22221E" />
+                        <TextBlock
+                            Text="Windows"
+                            Foreground="#746F64" />
+                    </StackPanel>
+
+                    <Grid Grid.Row="1" ColumnSpacing="10">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="*" />
+                        </Grid.ColumnDefinitions>
+                        <Border Background="#E5EADF" CornerRadius="8" Padding="10,8">
+                            <TextBlock
+                                x:Name="OfflineStoreStatusText"
+                                Text="Preparing offline calendar storage..."
+                                TextWrapping="Wrap"
+                                Foreground="#2F3F2A" />
+                        </Border>
+                        <Border Grid.Column="1" Background="#EBE7DA" CornerRadius="8" Padding="10,8">
+                            <TextBlock
+                                x:Name="AuthStatusText"
+                                Text="Not signed in."
+                                TextWrapping="Wrap"
+                                Foreground="#3A3832" />
+                        </Border>
+                        <Border Grid.Column="2" Background="#EBE7DA" CornerRadius="8" Padding="10,8">
+                            <TextBlock
+                                x:Name="SyncStatusText"
+                                Text="Sync idle."
+                                TextWrapping="Wrap"
+                                Foreground="#3A3832" />
+                        </Border>
+                    </Grid>
+                </Grid>
+
+                <StackPanel Grid.Column="1" Spacing="8">
+                    <Grid ColumnSpacing="8">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="*" />
+                        </Grid.ColumnDefinitions>
+                        <TextBox
+                            x:Name="EmailInput"
+                            Header="Email"
+                            PlaceholderText="you@school.edu" />
+                        <PasswordBox
+                            x:Name="PasswordInput"
+                            Grid.Column="1"
+                            Header="Password"
+                            PlaceholderText="Password" />
+                    </Grid>
+                    <StackPanel Orientation="Horizontal" Spacing="8" HorizontalAlignment="Right">
+                        <Button
+                            x:Name="SignInButton"
+                            Content="Log in"
+                            Background="#65775B"
+                            BorderBrush="#65775B"
+                            Foreground="#FFFEFA"
+                            Click="OnSignInClicked" />
+                        <Button
+                            x:Name="SyncButton"
+                            Content="Sync"
+                            Click="OnSyncClicked" />
+                        <Button
+                            x:Name="SignOutButton"
+                            Content="Log out"
+                            Click="OnSignOutClicked" />
+                    </StackPanel>
+                </StackPanel>
+            </Grid>
+        </Border>
+
+        <Border
+            Grid.Row="1"
+            Background="#FFFEFA"
+            BorderBrush="#D9D2C2"
+            BorderThickness="1"
+            CornerRadius="8"
+            Padding="18">
+            <Grid RowSpacing="14">
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto" />
+                    <RowDefinition Height="Auto" />
+                    <RowDefinition Height="*" />
+                </Grid.RowDefinitions>
+
+                <Grid ColumnSpacing="8">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="Auto" />
+                        <ColumnDefinition Width="Auto" />
+                        <ColumnDefinition Width="Auto" />
+                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="160" />
+                        <ColumnDefinition Width="Auto" />
+                    </Grid.ColumnDefinitions>
+                    <Button
+                        x:Name="PreviousRangeButton"
+                        Content="Previous"
+                        Click="OnPreviousRangeClicked" />
+                    <Button
+                        x:Name="TodayButton"
+                        Grid.Column="1"
+                        Content="Today"
+                        Click="OnTodayClicked" />
+                    <Button
+                        x:Name="NextRangeButton"
+                        Grid.Column="2"
+                        Content="Next"
+                        Click="OnNextRangeClicked" />
                     <TextBlock
-                        x:Name="EventsHeadingText"
-                        Text="Agenda"
+                        x:Name="RangeTitleText"
+                        Grid.Column="3"
+                        Text="Calendar"
                         FontSize="18"
-                        FontWeight="SemiBold" />
-                    <ListView
-                        x:Name="EventsList"
-                        Grid.Row="1"
-                        SelectionMode="Single"
-                        SelectionChanged="OnEventSelectionChanged">
-                        <ListView.ItemTemplate>
-                            <DataTemplate>
-                                <Grid Padding="0,10" ColumnSpacing="14">
-                                    <Grid.ColumnDefinitions>
-                                        <ColumnDefinition Width="96" />
-                                        <ColumnDefinition Width="*" />
-                                        <ColumnDefinition Width="78" />
-                                    </Grid.ColumnDefinitions>
-                                    <StackPanel>
-                                        <TextBlock Text="{Binding DateText}" FontWeight="SemiBold" />
-                                        <TextBlock Text="{Binding TimeText}" Opacity="0.72" />
-                                    </StackPanel>
-                                    <StackPanel Grid.Column="1">
-                                        <TextBlock Text="{Binding Title}" FontWeight="SemiBold" TextTrimming="CharacterEllipsis" />
-                                        <TextBlock Text="{Binding DetailText}" Opacity="0.72" TextTrimming="CharacterEllipsis" />
-                                    </StackPanel>
-                                    <TextBlock
-                                        Grid.Column="2"
-                                        Text="{Binding SyncStateText}"
-                                        Opacity="0.72"
-                                        HorizontalAlignment="Right"
-                                        VerticalAlignment="Center" />
-                                </Grid>
-                            </DataTemplate>
-                        </ListView.ItemTemplate>
-                    </ListView>
+                        FontWeight="SemiBold"
+                        Foreground="#22221E"
+                        VerticalAlignment="Center"
+                        HorizontalAlignment="Center" />
+                    <ComboBox
+                        x:Name="ViewModeInput"
+                        Grid.Column="4"
+                        SelectionChanged="OnViewModeChanged">
+                        <ComboBoxItem Content="Day" />
+                        <ComboBoxItem Content="Week" />
+                        <ComboBoxItem Content="Month" />
+                    </ComboBox>
+                    <Button
+                        x:Name="RefreshButton"
+                        Grid.Column="5"
+                        Content="Refresh"
+                        HorizontalAlignment="Right"
+                        Click="OnRefreshClicked" />
+                </Grid>
+
+                <Border
+                    Grid.Row="1"
+                    Background="#FAF8F1"
+                    BorderBrush="#D9D2C2"
+                    BorderThickness="1"
+                    CornerRadius="8"
+                    Padding="14">
+                    <Grid ColumnSpacing="10">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="2*" />
+                            <ColumnDefinition Width="Auto" />
+                            <ColumnDefinition Width="Auto" />
+                            <ColumnDefinition Width="Auto" />
+                        </Grid.ColumnDefinitions>
+                        <TextBox
+                            x:Name="EventTitleInput"
+                            Header="Event"
+                            PlaceholderText="New event title" />
+                        <DatePicker
+                            x:Name="EventDateInput"
+                            Grid.Column="1"
+                            Header="Date" />
+                        <TimePicker
+                            x:Name="EventTimeInput"
+                            Grid.Column="2"
+                            Header="Time" />
+                        <StackPanel Grid.Column="3" Spacing="8" VerticalAlignment="Bottom">
+                            <Button
+                                x:Name="AddEventButton"
+                                Content="Add"
+                                Background="#65775B"
+                                BorderBrush="#65775B"
+                                Foreground="#FFFEFA"
+                                Click="OnAddEventClicked" />
+                            <Button
+                                x:Name="SaveEventButton"
+                                Content="Save title"
+                                Click="OnSaveEventClicked" />
+                            <Button
+                                x:Name="DeleteEventButton"
+                                Content="Delete"
+                                Click="OnDeleteEventClicked" />
+                        </StackPanel>
+                    </Grid>
+                </Border>
+
+                <Grid Grid.Row="2" ColumnSpacing="16">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="2*" />
+                        <ColumnDefinition Width="*" />
+                    </Grid.ColumnDefinitions>
+
+                    <Border
+                        Background="#FAF8F1"
+                        BorderBrush="#D9D2C2"
+                        BorderThickness="1"
+                        CornerRadius="8"
+                        Padding="10">
+                        <GridView
+                            x:Name="CalendarDaysGrid"
+                            Background="#FAF8F1"
+                            SelectionMode="Single"
+                            SelectionChanged="OnCalendarDaySelectionChanged">
+                            <GridView.ItemsPanel>
+                                <ItemsPanelTemplate>
+                                    <ItemsWrapGrid Orientation="Horizontal" MaximumRowsOrColumns="7" />
+                                </ItemsPanelTemplate>
+                            </GridView.ItemsPanel>
+                            <GridView.ItemTemplate>
+                                <DataTemplate>
+                                    <Border
+                                        Width="124"
+                                        Height="104"
+                                        Padding="10"
+                                        Background="#FFFEFA"
+                                        BorderBrush="#D9D2C2"
+                                        BorderThickness="1"
+                                        CornerRadius="8">
+                                        <StackPanel Spacing="4">
+                                            <TextBlock Text="{Binding WeekdayText}" Foreground="#746F64" />
+                                            <TextBlock Text="{Binding DayText}" FontSize="20" FontWeight="SemiBold" Foreground="#22221E" />
+                                            <TextBlock Text="{Binding EventSummaryText}" TextWrapping="Wrap" TextTrimming="CharacterEllipsis" Foreground="#3A3832" />
+                                            <TextBlock Text="{Binding ToneText}" Foreground="#746F64" />
+                                        </StackPanel>
+                                    </Border>
+                                </DataTemplate>
+                            </GridView.ItemTemplate>
+                        </GridView>
+                    </Border>
+
+                    <Border
+                        Grid.Column="1"
+                        Background="#FAF8F1"
+                        BorderBrush="#D9D2C2"
+                        BorderThickness="1"
+                        CornerRadius="8"
+                        Padding="14">
+                        <Grid RowSpacing="8">
+                            <Grid.RowDefinitions>
+                                <RowDefinition Height="Auto" />
+                                <RowDefinition Height="*" />
+                            </Grid.RowDefinitions>
+                            <TextBlock
+                                x:Name="EventsHeadingText"
+                                Text="Agenda"
+                                FontSize="18"
+                                FontWeight="SemiBold"
+                                Foreground="#22221E" />
+                            <ListView
+                                x:Name="EventsList"
+                                Grid.Row="1"
+                                Background="#FAF8F1"
+                                SelectionMode="Single"
+                                SelectionChanged="OnEventSelectionChanged">
+                                <ListView.ItemTemplate>
+                                    <DataTemplate>
+                                        <Border BorderBrush="#D9D2C2" BorderThickness="0,0,0,1">
+                                            <Grid Padding="0,10" ColumnSpacing="14">
+                                                <Grid.ColumnDefinitions>
+                                                    <ColumnDefinition Width="96" />
+                                                    <ColumnDefinition Width="*" />
+                                                    <ColumnDefinition Width="78" />
+                                                </Grid.ColumnDefinitions>
+                                                <StackPanel>
+                                                    <TextBlock Text="{Binding DateText}" FontWeight="SemiBold" Foreground="#22221E" />
+                                                    <TextBlock Text="{Binding TimeText}" Foreground="#746F64" />
+                                                </StackPanel>
+                                                <StackPanel Grid.Column="1">
+                                                    <TextBlock Text="{Binding Title}" FontWeight="SemiBold" TextTrimming="CharacterEllipsis" Foreground="#3A3832" />
+                                                    <TextBlock Text="{Binding DetailText}" TextTrimming="CharacterEllipsis" Foreground="#746F64" />
+                                                </StackPanel>
+                                                <TextBlock
+                                                    Grid.Column="2"
+                                                    Text="{Binding SyncStateText}"
+                                                    Foreground="#746F64"
+                                                    HorizontalAlignment="Right"
+                                                    VerticalAlignment="Center" />
+                                            </Grid>
+                                        </Border>
+                                    </DataTemplate>
+                                </ListView.ItemTemplate>
+                            </ListView>
+                        </Grid>
+                    </Border>
                 </Grid>
             </Grid>
-        </Grid>
+        </Border>
     </Grid>
 </Window>

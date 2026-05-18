@@ -8,6 +8,7 @@ Native Windows app for Treg Calendar.
 - Language: C#.
 - Local storage: SQLite.
 - Remote backend: Supabase Auth, Postgres, and Edge Functions.
+- Product parity: keep the same account, event backend, and default visual direction as the web calendar.
 - Installer target: unsigned `.exe` installer first, signed installer later.
 
 The first engineering milestone is not UI. It is the offline sync foundation:
@@ -71,6 +72,7 @@ The first calendar-shaped Windows UI is in place:
 - Previous, Today, and Next controls move the visible range.
 - The agenda panel shows the events for the selected range.
 - Selecting a day updates the quick-add date.
+- The shell uses the web calendar's default warm/off-white theme tokens with the same muted green accent.
 
 Before using login locally, set the public Supabase publishable key:
 
