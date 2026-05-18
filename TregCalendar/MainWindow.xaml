@@ -14,7 +14,11 @@
     </Window.SystemBackdrop>
 
     <Grid Padding="24">
-        <StackPanel Spacing="8" HorizontalAlignment="Center" VerticalAlignment="Center">
+        <StackPanel
+            Width="360"
+            Spacing="10"
+            HorizontalAlignment="Center"
+            VerticalAlignment="Center">
             <TextBlock
                 Text="Treg Calendar"
                 FontSize="28"
@@ -27,6 +31,34 @@
             <TextBlock
                 x:Name="OfflineStoreStatusText"
                 Text="Preparing offline calendar storage..."
+                Opacity="0.72"
+                HorizontalAlignment="Center" />
+            <TextBox
+                x:Name="EmailInput"
+                Header="Email"
+                PlaceholderText="you@school.edu" />
+            <PasswordBox
+                x:Name="PasswordInput"
+                Header="Password"
+                PlaceholderText="Password" />
+            <StackPanel Orientation="Horizontal" Spacing="8" HorizontalAlignment="Center">
+                <Button
+                    x:Name="SignInButton"
+                    Content="Log in"
+                    Click="OnSignInClicked" />
+                <Button
+                    x:Name="SyncButton"
+                    Content="Sync"
+                    Click="OnSyncClicked" />
+                <Button
+                    x:Name="SignOutButton"
+                    Content="Log out"
+                    Click="OnSignOutClicked" />
+            </StackPanel>
+            <TextBlock
+                x:Name="AuthStatusText"
+                Text="Not signed in."
+                TextWrapping="Wrap"
                 Opacity="0.72"
                 HorizontalAlignment="Center" />
         </StackPanel>

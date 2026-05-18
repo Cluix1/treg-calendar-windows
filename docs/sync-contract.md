@@ -93,6 +93,11 @@ The Windows client implementation for this lives in:
 
 The sync client does not store auth tokens. It depends on `IAccessTokenProvider`; the login implementation must provide tokens from Windows secure storage.
 
+The first login provider lives in:
+
+- `TregCalendar/Auth/SupabaseAuthClient.cs`
+- `TregCalendar/Auth/WindowsCredentialSessionStore.cs`
+
 ## Initial API Shape
 
 ```json

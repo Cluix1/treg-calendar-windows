@@ -44,7 +44,20 @@ The first sync service slice is also in place:
 
 - `NativeSyncClient` posts queued mutations to the deployed Supabase Edge Function.
 - `CalendarSyncService` tracks a stable native client ID, sends pending mutations, applies accepted mutations, records conflicts/errors, stores `last_sync_cursor`, and merges returned remote events into SQLite.
-- A real Supabase login/token provider is still required before live account sync can run.
+
+The first native auth slice is in place:
+
+- The scaffold window supports email/password login, logout, and manual sync.
+- Supabase sessions are stored with Windows Password Vault.
+- The sync service reads access tokens through `IAccessTokenProvider`.
+
+Before using login locally, set the public Supabase publishable key:
+
+```powershell
+[Environment]::SetEnvironmentVariable("TREG_SUPABASE_PUBLISHABLE_KEY", "<public anon or publishable key>", "User")
+```
+
+Then restart Visual Studio so the running app inherits the new environment variable.
 
 ## Docs
 
