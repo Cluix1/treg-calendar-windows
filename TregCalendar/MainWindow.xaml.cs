@@ -3,6 +3,7 @@ using TregCalendar.Auth;
 using TregCalendar.Data;
 using TregCalendar.Remote;
 using TregCalendar.Sync;
+using TregCalendar.UI;
 
 namespace TregCalendar
 {
@@ -32,6 +33,7 @@ namespace TregCalendar
                 await _database.InitializeAsync();
                 OfflineStoreStatusText.Text = "Offline calendar storage is ready.";
                 await RefreshAuthStatusAsync();
+                await RefreshEventsAsync();
             }
             catch (Exception)
             {
@@ -46,6 +48,7 @@ namespace TregCalendar
                 var session = await _authClient.SignInWithPasswordAsync(EmailInput.Text, PasswordInput.Password);
                 PasswordInput.Password = string.Empty;
                 AuthStatusText.Text = $"Signed in as {session.Email}.";
+                await RefreshEventsAsync();
             });
         }
 
@@ -55,6 +58,7 @@ namespace TregCalendar
             {
                 var result = await _syncService.SyncOnceAsync();
                 AuthStatusText.Text = $"Sync complete. Accepted {result.AcceptedMutationCount}, applied {result.AppliedEventCount}, conflicts {result.ConflictCount}.";
+                await RefreshEventsAsync();
             });
         }
 
@@ -64,7 +68,13 @@ namespace TregCalendar
             {
                 await _authClient.SignOutAsync();
                 AuthStatusText.Text = "Signed out.";
+                await RefreshEventsAsync();
             });
+        }
+
+        private async void OnRefreshClicked(object sender, RoutedEventArgs args)
+        {
+            await RunUiActionAsync(RefreshEventsAsync);
         }
 
         private async Task RefreshAuthStatusAsync()
@@ -73,6 +83,17 @@ namespace TregCalendar
             AuthStatusText.Text = session is null
                 ? "Not signed in."
                 : $"Signed in as {session.Email}.";
+        }
+
+        private async Task RefreshEventsAsync()
+        {
+            var events = await _repository.GetEventsAsync();
+            var items = events
+                .Select(EventListItem.FromEvent)
+                .ToArray();
+
+            EventsList.ItemsSource = items;
+            EventsHeadingText.Text = items.Length == 1 ? "1 event" : $"{items.Length} events";
         }
 
         private async Task RunUiActionAsync(Func<Task> action)
@@ -97,6 +118,7 @@ namespace TregCalendar
             SignInButton.IsEnabled = !isBusy;
             SyncButton.IsEnabled = !isBusy;
             SignOutButton.IsEnabled = !isBusy;
+            RefreshButton.IsEnabled = !isBusy;
         }
     }
 }

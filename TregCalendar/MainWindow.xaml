@@ -13,54 +13,116 @@
         <MicaBackdrop />
     </Window.SystemBackdrop>
 
-    <Grid Padding="24">
-        <StackPanel
-            Width="360"
-            Spacing="10"
-            HorizontalAlignment="Center"
-            VerticalAlignment="Center">
-            <TextBlock
-                Text="Treg Calendar"
-                FontSize="28"
-                FontWeight="SemiBold"
-                HorizontalAlignment="Center" />
-            <TextBlock
-                Text="Native Windows scaffold is ready. Offline sync comes next."
-                Opacity="0.72"
-                HorizontalAlignment="Center" />
-            <TextBlock
-                x:Name="OfflineStoreStatusText"
-                Text="Preparing offline calendar storage..."
-                Opacity="0.72"
-                HorizontalAlignment="Center" />
-            <TextBox
-                x:Name="EmailInput"
-                Header="Email"
-                PlaceholderText="you@school.edu" />
-            <PasswordBox
-                x:Name="PasswordInput"
-                Header="Password"
-                PlaceholderText="Password" />
-            <StackPanel Orientation="Horizontal" Spacing="8" HorizontalAlignment="Center">
-                <Button
-                    x:Name="SignInButton"
-                    Content="Log in"
-                    Click="OnSignInClicked" />
-                <Button
-                    x:Name="SyncButton"
-                    Content="Sync"
-                    Click="OnSyncClicked" />
-                <Button
-                    x:Name="SignOutButton"
-                    Content="Log out"
-                    Click="OnSignOutClicked" />
+    <Grid Padding="24" RowSpacing="18">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="*" />
+        </Grid.RowDefinitions>
+
+        <Grid ColumnSpacing="18">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*" />
+                <ColumnDefinition Width="420" />
+            </Grid.ColumnDefinitions>
+
+            <StackPanel Spacing="4" VerticalAlignment="Center">
+                <TextBlock
+                    Text="Treg Calendar"
+                    FontSize="28"
+                    FontWeight="SemiBold" />
+                <TextBlock
+                    x:Name="OfflineStoreStatusText"
+                    Text="Preparing offline calendar storage..."
+                    Opacity="0.72" />
+                <TextBlock
+                    x:Name="AuthStatusText"
+                    Text="Not signed in."
+                    TextWrapping="Wrap"
+                    Opacity="0.72" />
             </StackPanel>
-            <TextBlock
-                x:Name="AuthStatusText"
-                Text="Not signed in."
-                TextWrapping="Wrap"
-                Opacity="0.72"
-                HorizontalAlignment="Center" />
-        </StackPanel>
+
+            <StackPanel Grid.Column="1" Spacing="8">
+                <Grid ColumnSpacing="8">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="*" />
+                    </Grid.ColumnDefinitions>
+                    <TextBox
+                        x:Name="EmailInput"
+                        Header="Email"
+                        PlaceholderText="you@school.edu" />
+                    <PasswordBox
+                        x:Name="PasswordInput"
+                        Grid.Column="1"
+                        Header="Password"
+                        PlaceholderText="Password" />
+                </Grid>
+                <StackPanel Orientation="Horizontal" Spacing="8" HorizontalAlignment="Right">
+                    <Button
+                        x:Name="SignInButton"
+                        Content="Log in"
+                        Click="OnSignInClicked" />
+                    <Button
+                        x:Name="SyncButton"
+                        Content="Sync"
+                        Click="OnSyncClicked" />
+                    <Button
+                        x:Name="SignOutButton"
+                        Content="Log out"
+                        Click="OnSignOutClicked" />
+                </StackPanel>
+            </StackPanel>
+        </Grid>
+
+        <Grid Grid.Row="1" RowSpacing="10">
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto" />
+                <RowDefinition Height="*" />
+            </Grid.RowDefinitions>
+
+            <Grid>
+                <TextBlock
+                    x:Name="EventsHeadingText"
+                    Text="Events"
+                    FontSize="18"
+                    FontWeight="SemiBold" />
+                <Button
+                    x:Name="RefreshButton"
+                    Content="Refresh"
+                    HorizontalAlignment="Right"
+                    Click="OnRefreshClicked" />
+            </Grid>
+
+            <ListView
+                x:Name="EventsList"
+                Grid.Row="1"
+                SelectionMode="None">
+                <ListView.ItemTemplate>
+                    <DataTemplate>
+                        <Grid Padding="0,10" ColumnSpacing="14">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="112" />
+                                <ColumnDefinition Width="*" />
+                                <ColumnDefinition Width="92" />
+                            </Grid.ColumnDefinitions>
+                            <StackPanel>
+                                <TextBlock Text="{Binding DateText}" FontWeight="SemiBold" />
+                                <TextBlock Text="{Binding TimeText}" Opacity="0.72" />
+                            </StackPanel>
+                            <StackPanel Grid.Column="1">
+                                <TextBlock Text="{Binding Title}" FontWeight="SemiBold" TextTrimming="CharacterEllipsis" />
+                                <TextBlock Text="{Binding DetailText}" Opacity="0.72" TextTrimming="CharacterEllipsis" />
+                            </StackPanel>
+                            <TextBlock
+                                Grid.Column="2"
+                                Text="{Binding SyncStateText}"
+                                Opacity="0.72"
+                                HorizontalAlignment="Right"
+                                VerticalAlignment="Center" />
+                        </Grid>
+                    </DataTemplate>
+                </ListView.ItemTemplate>
+            </ListView>
+        </Grid>
     </Grid>
 </Window>
