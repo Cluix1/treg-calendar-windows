@@ -22,6 +22,10 @@ namespace TregCalendar
         private IReadOnlyList<LocalCalendarEvent> _events = [];
         private DateOnly _visibleDate = DateOnly.FromDateTime(DateTime.Now);
         private CalendarViewMode _viewMode = CalendarViewMode.Month;
+        private bool _scheduleMode;
+        private bool _searchMode;
+        private bool _sidebarVisible = true;
+        private string _searchQuery = string.Empty;
         private bool _autoSyncRunning;
         private bool _isBusy;
 
@@ -69,6 +73,7 @@ namespace TregCalendar
                 var session = await _authClient.SignInWithPasswordAsync(EmailInput.Text, PasswordInput.Password);
                 PasswordInput.Password = string.Empty;
                 AuthStatusText.Text = $"Signed in as {session.Email}.";
+                AuthPopover.Visibility = Visibility.Collapsed;
                 await RefreshEventsAsync();
                 await TrySyncAfterLocalChangeAsync("Signed in");
             });
@@ -89,6 +94,8 @@ namespace TregCalendar
                 await _authClient.SignOutAsync();
                 AuthStatusText.Text = "Signed out.";
                 SyncStatusText.Text = "Sync idle.";
+                ProfileButton.Content = "U";
+                AuthPopover.Visibility = Visibility.Collapsed;
                 await RefreshEventsAsync();
             });
         }
@@ -131,6 +138,8 @@ namespace TregCalendar
 
         private void OnViewModeChanged(object sender, SelectionChangedEventArgs args)
         {
+            _scheduleMode = false;
+            _searchMode = false;
             _viewMode = ViewModeInput.SelectedIndex switch
             {
                 0 => CalendarViewMode.Day,
@@ -138,6 +147,85 @@ namespace TregCalendar
                 _ => CalendarViewMode.Month
             };
             RefreshCalendarSurface();
+        }
+
+        private void OnSidebarToggleClicked(object sender, RoutedEventArgs args)
+        {
+            _sidebarVisible = !_sidebarVisible;
+            SidebarColumn.Width = _sidebarVisible ? new GridLength(268) : new GridLength(0);
+            SidebarPanel.Visibility = _sidebarVisible ? Visibility.Visible : Visibility.Collapsed;
+        }
+
+        private void OnWeekModeClicked(object sender, RoutedEventArgs args)
+        {
+            _scheduleMode = false;
+            _searchMode = false;
+            _viewMode = CalendarViewMode.Week;
+            ViewModeInput.SelectedIndex = 1;
+            RefreshCalendarSurface();
+        }
+
+        private void OnMonthModeClicked(object sender, RoutedEventArgs args)
+        {
+            _scheduleMode = false;
+            _searchMode = false;
+            _viewMode = CalendarViewMode.Month;
+            ViewModeInput.SelectedIndex = 2;
+            RefreshCalendarSurface();
+        }
+
+        private void OnYearModeClicked(object sender, RoutedEventArgs args)
+        {
+            _scheduleMode = false;
+            _searchMode = false;
+            _viewMode = CalendarViewMode.Month;
+            ViewModeInput.SelectedIndex = 2;
+            RefreshCalendarSurface();
+        }
+
+        private void OnScheduleModeClicked(object sender, RoutedEventArgs args)
+        {
+            _scheduleMode = true;
+            _searchMode = false;
+            RefreshCalendarSurface();
+        }
+
+        private void OnSearchModeClicked(object sender, RoutedEventArgs args)
+        {
+            _scheduleMode = false;
+            _searchMode = true;
+            RefreshCalendarSurface();
+        }
+
+        private void OnSearchTextChanged(object sender, TextChangedEventArgs args)
+        {
+            _searchQuery = SearchInput.Text;
+            _searchMode = _searchQuery.Trim().Length > 0;
+            SearchModeButton.Visibility = _searchMode ? Visibility.Visible : Visibility.Collapsed;
+            RefreshCalendarSurface();
+        }
+
+        private async void OnProfileClicked(object sender, RoutedEventArgs args)
+        {
+            AuthPopover.Visibility = AuthPopover.Visibility == Visibility.Visible
+                ? Visibility.Collapsed
+                : Visibility.Visible;
+
+            var session = await _authClient.GetCurrentSessionAsync();
+            if (session is null)
+            {
+                AuthStatusText.Text = "Not signed in.";
+                return;
+            }
+
+            AuthStatusText.Text = $"Signed in as {session.Email}.";
+        }
+
+        private void OnShowEditorClicked(object sender, RoutedEventArgs args)
+        {
+            NativeEditorPanel.Visibility = NativeEditorPanel.Visibility == Visibility.Visible
+                ? Visibility.Collapsed
+                : Visibility.Visible;
         }
 
         private void OnCalendarDaySelectionChanged(object sender, SelectionChangedEventArgs args)
@@ -288,6 +376,9 @@ namespace TregCalendar
             AuthStatusText.Text = session is null
                 ? "Not signed in."
                 : $"Signed in as {session.Email}.";
+            ProfileButton.Content = string.IsNullOrWhiteSpace(session?.Email)
+                ? "U"
+                : session.Email.Trim()[0].ToString().ToUpperInvariant();
         }
 
         private async Task RefreshEventsAsync()
@@ -304,7 +395,7 @@ namespace TregCalendar
                 return;
             }
 
-            var days = BuildCalendarDays();
+            var days = BuildMiniMonthDays();
             var agendaEvents = FilterAgendaEvents()
                 .Select(EventListItem.FromEvent)
                 .ToArray();
@@ -312,13 +403,19 @@ namespace TregCalendar
             CalendarDaysGrid.ItemsSource = days;
             EventsList.ItemsSource = agendaEvents;
             RangeTitleText.Text = BuildRangeTitle();
+            MiniMonthTitleText.Text = _visibleDate.ToDateTime(TimeOnly.MinValue).ToString("MMMM yyyy");
             EventsHeadingText.Text = agendaEvents.Length == 1 ? "1 agenda item" : $"{agendaEvents.Length} agenda items";
+            RefreshModeButtons();
         }
 
-        private IReadOnlyList<CalendarDayItem> BuildCalendarDays()
+        private IReadOnlyList<CalendarDayItem> BuildMiniMonthDays()
         {
-            var dates = VisibleDates();
             var focusedMonth = new DateOnly(_visibleDate.Year, _visibleDate.Month, 1);
+            var monthStart = StartOfWeek(focusedMonth);
+            var dates = Enumerable.Range(0, 42)
+                .Select(offset => monthStart.AddDays(offset))
+                .ToArray();
+
             return dates
                 .Select(date => CalendarDayItem.FromDate(date, _visibleDate, focusedMonth, EventsForDate(date)))
                 .ToArray();
@@ -348,6 +445,24 @@ namespace TregCalendar
 
         private IReadOnlyList<LocalCalendarEvent> FilterAgendaEvents()
         {
+            var query = _searchQuery.Trim();
+            if (_searchMode && query.Length > 0)
+            {
+                return _events
+                    .Where(calendarEvent => MatchesSearch(calendarEvent, query))
+                    .OrderBy(DateForEvent)
+                    .ThenBy(calendarEvent => calendarEvent.Title)
+                    .ToArray();
+            }
+
+            if (_scheduleMode)
+            {
+                return _events
+                    .OrderBy(DateForEvent)
+                    .ThenBy(calendarEvent => calendarEvent.Title)
+                    .ToArray();
+            }
+
             var visibleDates = VisibleDates().ToHashSet();
             return _events
                 .Where(calendarEvent =>
@@ -371,6 +486,16 @@ namespace TregCalendar
 
         private string BuildRangeTitle()
         {
+            if (_searchMode)
+            {
+                return _searchQuery.Trim().Length == 0 ? "Search" : $"Search: {_searchQuery.Trim()}";
+            }
+
+            if (_scheduleMode)
+            {
+                return "Schedule";
+            }
+
             if (_viewMode == CalendarViewMode.Day)
             {
                 return _visibleDate.ToDateTime(TimeOnly.MinValue).ToString("dddd, MMMM d, yyyy");
@@ -384,6 +509,36 @@ namespace TregCalendar
             }
 
             return _visibleDate.ToDateTime(TimeOnly.MinValue).ToString("MMMM yyyy");
+        }
+
+        private void RefreshModeButtons()
+        {
+            WeekModeButton.Foreground = _viewMode == CalendarViewMode.Week && !_scheduleMode && !_searchMode
+                ? new Microsoft.UI.Xaml.Media.SolidColorBrush(Microsoft.UI.ColorHelper.FromArgb(255, 34, 34, 30))
+                : new Microsoft.UI.Xaml.Media.SolidColorBrush(Microsoft.UI.ColorHelper.FromArgb(255, 116, 111, 100));
+            MonthModeButton.Foreground = _viewMode == CalendarViewMode.Month && !_scheduleMode && !_searchMode
+                ? new Microsoft.UI.Xaml.Media.SolidColorBrush(Microsoft.UI.ColorHelper.FromArgb(255, 34, 34, 30))
+                : new Microsoft.UI.Xaml.Media.SolidColorBrush(Microsoft.UI.ColorHelper.FromArgb(255, 116, 111, 100));
+            ScheduleModeButton.Foreground = _scheduleMode
+                ? new Microsoft.UI.Xaml.Media.SolidColorBrush(Microsoft.UI.ColorHelper.FromArgb(255, 34, 34, 30))
+                : new Microsoft.UI.Xaml.Media.SolidColorBrush(Microsoft.UI.ColorHelper.FromArgb(255, 116, 111, 100));
+            SearchModeButton.Foreground = _searchMode
+                ? new Microsoft.UI.Xaml.Media.SolidColorBrush(Microsoft.UI.ColorHelper.FromArgb(255, 34, 34, 30))
+                : new Microsoft.UI.Xaml.Media.SolidColorBrush(Microsoft.UI.ColorHelper.FromArgb(255, 116, 111, 100));
+        }
+
+        private static bool MatchesSearch(LocalCalendarEvent calendarEvent, string query)
+        {
+            return Contains(calendarEvent.Title, query)
+                || Contains(calendarEvent.CourseName, query)
+                || Contains(calendarEvent.Location, query)
+                || Contains(calendarEvent.DescriptionHtml, query);
+        }
+
+        private static bool Contains(string? value, string query)
+        {
+            return !string.IsNullOrWhiteSpace(value)
+                && value.Contains(query, StringComparison.OrdinalIgnoreCase);
         }
 
         private static DateOnly StartOfWeek(DateOnly date)
