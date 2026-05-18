@@ -24,6 +24,11 @@
                 Text="Native Windows scaffold is ready. Offline sync comes next."
                 Opacity="0.72"
                 HorizontalAlignment="Center" />
+            <TextBlock
+                x:Name="OfflineStoreStatusText"
+                Text="Preparing offline calendar storage..."
+                Opacity="0.72"
+                HorizontalAlignment="Center" />
         </StackPanel>
     </Grid>
 </Window>

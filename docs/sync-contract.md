@@ -12,6 +12,8 @@ This is the shared protocol for native Windows and macOS clients.
 
 ## Local Tables
 
+Implemented in `TregCalendar/Data/LocalCalendarDatabase.cs`.
+
 ### `local_events`
 
 Stores the last known event state.

@@ -34,6 +34,12 @@ The initial WinUI 3 packaged app has been scaffolded and runs as a blank native 
 - Target framework: `net8.0-windows10.0.19041.0`
 - Minimum Windows version: `10.0.17763.0` (Windows 10 version 1809)
 
+The first local sync foundation is in place:
+
+- `local_events`, `pending_mutations`, and `sync_state` SQLite tables are created on app launch.
+- Local event writes can be saved with a pending mutation in the same SQLite transaction.
+- Pending mutations can be read in sync-sized batches, marked accepted, or marked failed for retry visibility.
+
 ## Docs
 
 - [Architecture](docs/architecture.md)
