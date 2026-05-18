@@ -1,0 +1,10 @@
+{
+  "profiles": {
+    "TregCalendar (Package)": {
+      "commandName": "MsixPackage"
+    },
+    "TregCalendar (Unpackaged)": {
+      "commandName": "Project"
+    }
+  }
+}

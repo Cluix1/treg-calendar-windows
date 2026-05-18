@@ -18,7 +18,7 @@ edit locally -> save to SQLite -> enqueue mutation -> sync in background -> merg
 
 ## Setup
 
-This repo needs Visual Studio with the Windows App SDK workload/templates. The current local machine has .NET runtimes installed but no .NET SDK, so project generation/building should be completed after installing the native Windows toolchain.
+This repo needs Visual Studio with the Windows App SDK workload/templates.
 
 Recommended tooling:
 
@@ -26,6 +26,13 @@ Recommended tooling:
 - .NET SDK.
 - Windows App SDK / WinUI 3 templates.
 - SQLite tooling.
+
+## Current Status
+
+The initial WinUI 3 packaged app has been scaffolded and runs as a blank native window. It targets:
+
+- Target framework: `net8.0-windows10.0.19041.0`
+- Minimum Windows version: `10.0.17763.0` (Windows 10 version 1809)
 
 ## Docs
 
