@@ -57,6 +57,14 @@ The first local editing slice is in place:
 - Selecting a synced event lets you save a title change or queue a delete.
 - New local events must sync once before edit/delete mutations are allowed, because the server needs a remote event ID for those operations.
 
+The first automatic sync behavior is in place:
+
+- Local edits try to sync immediately after being queued.
+- The app syncs on startup when a saved session exists.
+- The app retries sync every five minutes while open.
+- The app retries when Windows reports network connectivity has changed.
+- The UI shows whether local changes are waiting to sync.
+
 Before using login locally, set the public Supabase publishable key:
 
 ```powershell

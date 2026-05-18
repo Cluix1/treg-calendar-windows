@@ -39,6 +39,11 @@
                     Text="Not signed in."
                     TextWrapping="Wrap"
                     Opacity="0.72" />
+                <TextBlock
+                    x:Name="SyncStatusText"
+                    Text="Sync idle."
+                    TextWrapping="Wrap"
+                    Opacity="0.72" />
             </StackPanel>
 
             <StackPanel Grid.Column="1" Spacing="8">

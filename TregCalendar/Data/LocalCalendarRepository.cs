@@ -144,6 +144,14 @@ public sealed class LocalCalendarRepository
         return mutations;
     }
 
+    public async Task<int> CountPendingMutationsAsync(CancellationToken cancellationToken = default)
+    {
+        await using var connection = await _database.OpenConnectionAsync(cancellationToken);
+        await using var command = connection.CreateCommand();
+        command.CommandText = "SELECT COUNT(*) FROM pending_mutations;";
+        return Convert.ToInt32(await command.ExecuteScalarAsync(cancellationToken));
+    }
+
     public async Task MarkMutationsAcceptedAsync(
         IEnumerable<Guid> clientMutationIds,
         CancellationToken cancellationToken = default)

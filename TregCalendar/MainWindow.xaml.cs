@@ -1,5 +1,6 @@
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
+using Microsoft.UI.Dispatching;
 using System.Text.Json;
 using TregCalendar.Auth;
 using TregCalendar.Core;
@@ -7,6 +8,7 @@ using TregCalendar.Data;
 using TregCalendar.Remote;
 using TregCalendar.Sync;
 using TregCalendar.UI;
+using Windows.Networking.Connectivity;
 
 namespace TregCalendar
 {
@@ -16,18 +18,27 @@ namespace TregCalendar
         private readonly LocalCalendarRepository _repository;
         private readonly SupabaseAuthClient _authClient;
         private readonly CalendarSyncService _syncService;
+        private readonly DispatcherQueueTimer _syncTimer;
+        private bool _autoSyncRunning;
+        private bool _isBusy;
 
         public MainWindow()
         {
             InitializeComponent();
             EventDateInput.Date = DateTimeOffset.Now;
             EventTimeInput.Time = DateTimeOffset.Now.TimeOfDay;
+            _syncTimer = DispatcherQueue.CreateTimer();
+            _syncTimer.Interval = TimeSpan.FromMinutes(5);
+            _syncTimer.Tick += OnSyncTimerTick;
             _repository = new LocalCalendarRepository(_database);
             _authClient = new SupabaseAuthClient(new HttpClient(), new WindowsCredentialSessionStore());
             _syncService = new CalendarSyncService(
                 _database,
                 _repository,
                 new NativeSyncClient(new HttpClient(), _authClient));
+            NetworkInformation.NetworkStatusChanged += OnNetworkStatusChanged;
+            Closed += OnClosed;
+            _syncTimer.Start();
             _ = InitializeOfflineStoreAsync();
         }
 
@@ -39,6 +50,7 @@ namespace TregCalendar
                 OfflineStoreStatusText.Text = "Offline calendar storage is ready.";
                 await RefreshAuthStatusAsync();
                 await RefreshEventsAsync();
+                await TryAutoSyncAsync("Startup sync");
             }
             catch (Exception)
             {
@@ -54,6 +66,7 @@ namespace TregCalendar
                 PasswordInput.Password = string.Empty;
                 AuthStatusText.Text = $"Signed in as {session.Email}.";
                 await RefreshEventsAsync();
+                await TrySyncAfterLocalChangeAsync("Signed in");
             });
         }
 
@@ -61,9 +74,7 @@ namespace TregCalendar
         {
             await RunUiActionAsync(async () =>
             {
-                var result = await _syncService.SyncOnceAsync();
-                AuthStatusText.Text = $"Sync complete. Accepted {result.AcceptedMutationCount}, applied {result.AppliedEventCount}, conflicts {result.ConflictCount}.";
-                await RefreshEventsAsync();
+                await SyncAndRefreshAsync("Sync complete");
             });
         }
 
@@ -73,6 +84,7 @@ namespace TregCalendar
             {
                 await _authClient.SignOutAsync();
                 AuthStatusText.Text = "Signed out.";
+                SyncStatusText.Text = "Sync idle.";
                 await RefreshEventsAsync();
             });
         }
@@ -145,6 +157,7 @@ namespace TregCalendar
                 AuthStatusText.Text = "Event saved locally. Click Sync to upload it.";
                 EventTitleInput.Text = string.Empty;
                 await RefreshEventsAsync();
+                await TrySyncAfterLocalChangeAsync("Event saved");
             });
         }
 
@@ -178,6 +191,7 @@ namespace TregCalendar
 
                 AuthStatusText.Text = "Event title saved locally. Click Sync to upload it.";
                 await RefreshEventsAsync();
+                await TrySyncAfterLocalChangeAsync("Event updated");
             });
         }
 
@@ -205,6 +219,7 @@ namespace TregCalendar
                 AuthStatusText.Text = "Event deleted locally. Click Sync to upload it.";
                 EventTitleInput.Text = string.Empty;
                 await RefreshEventsAsync();
+                await TrySyncAfterLocalChangeAsync("Event deleted");
             });
         }
 
@@ -225,6 +240,91 @@ namespace TregCalendar
 
             EventsList.ItemsSource = items;
             EventsHeadingText.Text = items.Length == 1 ? "1 event" : $"{items.Length} events";
+            await RefreshPendingStatusAsync();
+        }
+
+        private async Task RefreshPendingStatusAsync()
+        {
+            var pendingCount = await _repository.CountPendingMutationsAsync();
+            SyncStatusText.Text = pendingCount == 0
+                ? "All local changes are synced."
+                : pendingCount == 1
+                    ? "1 local change is waiting to sync."
+                    : $"{pendingCount} local changes are waiting to sync.";
+        }
+
+        private async Task SyncAndRefreshAsync(string label)
+        {
+            SyncStatusText.Text = "Syncing...";
+            var result = await _syncService.SyncOnceAsync();
+            AuthStatusText.Text = $"{label}. Accepted {result.AcceptedMutationCount}, applied {result.AppliedEventCount}, conflicts {result.ConflictCount}.";
+            await RefreshEventsAsync();
+        }
+
+        private async Task TrySyncAfterLocalChangeAsync(string label)
+        {
+            try
+            {
+                await SyncAndRefreshAsync($"{label} and synced");
+            }
+            catch (Exception exception)
+            {
+                AuthStatusText.Text = $"{label} locally. Sync will retry later.";
+                SyncStatusText.Text = $"Sync paused: {exception.Message}";
+                await RefreshPendingStatusAsync();
+            }
+        }
+
+        private async Task TryAutoSyncAsync(string label)
+        {
+            if (_isBusy || _autoSyncRunning || !HasInternetAccess())
+            {
+                return;
+            }
+
+            var session = await _authClient.GetCurrentSessionAsync();
+            if (session is null)
+            {
+                return;
+            }
+
+            _autoSyncRunning = true;
+            try
+            {
+                SyncStatusText.Text = $"{label}...";
+                await SyncAndRefreshAsync(label);
+            }
+            catch (Exception exception)
+            {
+                SyncStatusText.Text = $"{label} paused: {exception.Message}";
+                await RefreshPendingStatusAsync();
+            }
+            finally
+            {
+                _autoSyncRunning = false;
+            }
+        }
+
+        private void OnSyncTimerTick(DispatcherQueueTimer sender, object args)
+        {
+            _ = TryAutoSyncAsync("Scheduled sync");
+        }
+
+        private void OnNetworkStatusChanged(object sender)
+        {
+            _ = DispatcherQueue.TryEnqueue(() => _ = TryAutoSyncAsync("Network sync"));
+        }
+
+        private void OnClosed(object sender, WindowEventArgs args)
+        {
+            _syncTimer.Stop();
+            NetworkInformation.NetworkStatusChanged -= OnNetworkStatusChanged;
+        }
+
+        private static bool HasInternetAccess()
+        {
+            return NetworkInformation.GetInternetConnectionProfile()?.GetNetworkConnectivityLevel()
+                == NetworkConnectivityLevel.InternetAccess;
         }
 
         private async Task RunUiActionAsync(Func<Task> action)
@@ -246,6 +346,7 @@ namespace TregCalendar
 
         private void SetBusy(bool isBusy)
         {
+            _isBusy = isBusy;
             SignInButton.IsEnabled = !isBusy;
             SyncButton.IsEnabled = !isBusy;
             SignOutButton.IsEnabled = !isBusy;

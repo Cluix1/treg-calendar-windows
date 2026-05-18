@@ -67,6 +67,8 @@ Required fields:
 4. Do not drop failed mutations silently.
 5. `client_mutation_id` makes retries idempotent.
 
+The Windows app now attempts sync after each local edit, on app startup, every five minutes while open, and when Windows reports a network status change.
+
 ## Conflict Policy
 
 Version 1 uses last-write-wins with conflict detection:

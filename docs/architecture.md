@@ -42,6 +42,8 @@ The app must never depend on a fresh network request to render the main calendar
 5. Pull remote updates after pending mutations are accepted.
 6. Repeat automatically when connectivity changes.
 
+The current Windows shell implements this foundation with startup sync, post-edit sync attempts, a five-minute retry timer, and a network-change retry hook. Failed sync attempts leave mutations in `pending_mutations`.
+
 ## Auth
 
 Use Supabase Auth. Store tokens using Windows secure storage, not plain text files or localStorage equivalents.
