@@ -65,6 +65,13 @@ The first automatic sync behavior is in place:
 - The app retries when Windows reports network connectivity has changed.
 - The UI shows whether local changes are waiting to sync.
 
+The first calendar-shaped Windows UI is in place:
+
+- Day, week, and month views share the local SQLite event data.
+- Previous, Today, and Next controls move the visible range.
+- The agenda panel shows the events for the selected range.
+- Selecting a day updates the quick-add date.
+
 Before using login locally, set the public Supabase publishable key:
 
 ```powershell

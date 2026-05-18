@@ -31,6 +31,8 @@ TregCalendar.Remote
   Supabase REST or Edge Function sync client
 ```
 
+The current WinUI shell is intentionally compact: it has day/week/month range navigation, an agenda panel, quick local editing controls, and sync status. Future UI work should split this into dedicated view models and pages once the behavior settles.
+
 ## Offline Model
 
 The app must never depend on a fresh network request to render the main calendar. It should:

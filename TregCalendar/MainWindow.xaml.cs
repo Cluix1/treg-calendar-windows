@@ -19,6 +19,9 @@ namespace TregCalendar
         private readonly SupabaseAuthClient _authClient;
         private readonly CalendarSyncService _syncService;
         private readonly DispatcherQueueTimer _syncTimer;
+        private IReadOnlyList<LocalCalendarEvent> _events = [];
+        private DateOnly _visibleDate = DateOnly.FromDateTime(DateTime.Now);
+        private CalendarViewMode _viewMode = CalendarViewMode.Month;
         private bool _autoSyncRunning;
         private bool _isBusy;
 
@@ -94,6 +97,60 @@ namespace TregCalendar
             await RunUiActionAsync(RefreshEventsAsync);
         }
 
+        private void OnPreviousRangeClicked(object sender, RoutedEventArgs args)
+        {
+            _visibleDate = _viewMode switch
+            {
+                CalendarViewMode.Day => _visibleDate.AddDays(-1),
+                CalendarViewMode.Week => _visibleDate.AddDays(-7),
+                CalendarViewMode.Month => _visibleDate.AddMonths(-1),
+                _ => _visibleDate
+            };
+            RefreshCalendarSurface();
+        }
+
+        private void OnTodayClicked(object sender, RoutedEventArgs args)
+        {
+            _visibleDate = DateOnly.FromDateTime(DateTime.Now);
+            EventDateInput.Date = DateTimeOffset.Now;
+            RefreshCalendarSurface();
+        }
+
+        private void OnNextRangeClicked(object sender, RoutedEventArgs args)
+        {
+            _visibleDate = _viewMode switch
+            {
+                CalendarViewMode.Day => _visibleDate.AddDays(1),
+                CalendarViewMode.Week => _visibleDate.AddDays(7),
+                CalendarViewMode.Month => _visibleDate.AddMonths(1),
+                _ => _visibleDate
+            };
+            RefreshCalendarSurface();
+        }
+
+        private void OnViewModeChanged(object sender, SelectionChangedEventArgs args)
+        {
+            _viewMode = ViewModeInput.SelectedIndex switch
+            {
+                0 => CalendarViewMode.Day,
+                1 => CalendarViewMode.Week,
+                _ => CalendarViewMode.Month
+            };
+            RefreshCalendarSurface();
+        }
+
+        private void OnCalendarDaySelectionChanged(object sender, SelectionChangedEventArgs args)
+        {
+            if (CalendarDaysGrid.SelectedItem is not CalendarDayItem day)
+            {
+                return;
+            }
+
+            _visibleDate = day.Date;
+            EventDateInput.Date = day.Date.ToDateTime(TimeOnly.MinValue);
+            RefreshCalendarSurface();
+        }
+
         private void OnEventSelectionChanged(object sender, SelectionChangedEventArgs args)
         {
             if (EventsList.SelectedItem is EventListItem item)
@@ -129,6 +186,7 @@ namespace TregCalendar
                 }
 
                 var startsAt = EventDateInput.Date.Date.Add(EventTimeInput.Time);
+                _visibleDate = DateOnly.FromDateTime(startsAt.Date);
                 var endsAt = startsAt.AddHours(1);
                 var localEvent = new LocalCalendarEvent
                 {
@@ -233,14 +291,105 @@ namespace TregCalendar
 
         private async Task RefreshEventsAsync()
         {
-            var events = await _repository.GetEventsAsync();
-            var items = events
+            _events = await _repository.GetEventsAsync();
+            RefreshCalendarSurface();
+            await RefreshPendingStatusAsync();
+        }
+
+        private void RefreshCalendarSurface()
+        {
+            var days = BuildCalendarDays();
+            var agendaEvents = FilterAgendaEvents()
                 .Select(EventListItem.FromEvent)
                 .ToArray();
 
-            EventsList.ItemsSource = items;
-            EventsHeadingText.Text = items.Length == 1 ? "1 event" : $"{items.Length} events";
-            await RefreshPendingStatusAsync();
+            CalendarDaysGrid.ItemsSource = days;
+            EventsList.ItemsSource = agendaEvents;
+            RangeTitleText.Text = BuildRangeTitle();
+            EventsHeadingText.Text = agendaEvents.Length == 1 ? "1 agenda item" : $"{agendaEvents.Length} agenda items";
+        }
+
+        private IReadOnlyList<CalendarDayItem> BuildCalendarDays()
+        {
+            var dates = VisibleDates();
+            var focusedMonth = new DateOnly(_visibleDate.Year, _visibleDate.Month, 1);
+            return dates
+                .Select(date => CalendarDayItem.FromDate(date, _visibleDate, focusedMonth, EventsForDate(date)))
+                .ToArray();
+        }
+
+        private IReadOnlyList<DateOnly> VisibleDates()
+        {
+            if (_viewMode == CalendarViewMode.Day)
+            {
+                return [_visibleDate];
+            }
+
+            if (_viewMode == CalendarViewMode.Week)
+            {
+                var start = StartOfWeek(_visibleDate);
+                return Enumerable.Range(0, 7)
+                    .Select(offset => start.AddDays(offset))
+                    .ToArray();
+            }
+
+            var firstOfMonth = new DateOnly(_visibleDate.Year, _visibleDate.Month, 1);
+            var monthStart = StartOfWeek(firstOfMonth);
+            return Enumerable.Range(0, 42)
+                .Select(offset => monthStart.AddDays(offset))
+                .ToArray();
+        }
+
+        private IReadOnlyList<LocalCalendarEvent> FilterAgendaEvents()
+        {
+            var visibleDates = VisibleDates().ToHashSet();
+            return _events
+                .Where(calendarEvent =>
+                {
+                    var eventDate = DateForEvent(calendarEvent);
+                    return eventDate is not null && visibleDates.Contains(eventDate.Value);
+                })
+                .OrderBy(DateForEvent)
+                .ThenBy(calendarEvent => calendarEvent.Title)
+                .ToArray();
+        }
+
+        private IReadOnlyList<LocalCalendarEvent> EventsForDate(DateOnly date)
+        {
+            return _events
+                .Where(calendarEvent => DateForEvent(calendarEvent) == date)
+                .OrderBy(calendarEvent => calendarEvent.StartsAt ?? calendarEvent.DueAt ?? calendarEvent.EndsAt)
+                .ThenBy(calendarEvent => calendarEvent.Title)
+                .ToArray();
+        }
+
+        private string BuildRangeTitle()
+        {
+            if (_viewMode == CalendarViewMode.Day)
+            {
+                return _visibleDate.ToDateTime(TimeOnly.MinValue).ToString("dddd, MMMM d, yyyy");
+            }
+
+            if (_viewMode == CalendarViewMode.Week)
+            {
+                var start = StartOfWeek(_visibleDate);
+                var end = start.AddDays(6);
+                return $"{start.ToDateTime(TimeOnly.MinValue):MMM d} - {end.ToDateTime(TimeOnly.MinValue):MMM d, yyyy}";
+            }
+
+            return _visibleDate.ToDateTime(TimeOnly.MinValue).ToString("MMMM yyyy");
+        }
+
+        private static DateOnly StartOfWeek(DateOnly date)
+        {
+            var offset = (int)date.DayOfWeek;
+            return date.AddDays(-offset);
+        }
+
+        private static DateOnly? DateForEvent(LocalCalendarEvent calendarEvent)
+        {
+            var value = calendarEvent.StartsAt ?? calendarEvent.DueAt ?? calendarEvent.EndsAt;
+            return value is null ? null : DateOnly.FromDateTime(value.Value.ToLocalTime().Date);
         }
 
         private async Task RefreshPendingStatusAsync()
