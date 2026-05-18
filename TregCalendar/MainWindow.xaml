@@ -77,6 +77,7 @@
         <Grid Grid.Row="1" RowSpacing="10">
             <Grid.RowDefinitions>
                 <RowDefinition Height="Auto" />
+                <RowDefinition Height="Auto" />
                 <RowDefinition Height="*" />
             </Grid.RowDefinitions>
 
@@ -93,10 +94,46 @@
                     Click="OnRefreshClicked" />
             </Grid>
 
+            <Grid Grid.Row="1" ColumnSpacing="10">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="2*" />
+                    <ColumnDefinition Width="Auto" />
+                    <ColumnDefinition Width="Auto" />
+                    <ColumnDefinition Width="Auto" />
+                </Grid.ColumnDefinitions>
+                <TextBox
+                    x:Name="EventTitleInput"
+                    Header="Event"
+                    PlaceholderText="New event title" />
+                <DatePicker
+                    x:Name="EventDateInput"
+                    Grid.Column="1"
+                    Header="Date" />
+                <TimePicker
+                    x:Name="EventTimeInput"
+                    Grid.Column="2"
+                    Header="Time" />
+                <StackPanel Grid.Column="3" Spacing="8" VerticalAlignment="Bottom">
+                    <Button
+                        x:Name="AddEventButton"
+                        Content="Add"
+                        Click="OnAddEventClicked" />
+                    <Button
+                        x:Name="SaveEventButton"
+                        Content="Save title"
+                        Click="OnSaveEventClicked" />
+                    <Button
+                        x:Name="DeleteEventButton"
+                        Content="Delete"
+                        Click="OnDeleteEventClicked" />
+                </StackPanel>
+            </Grid>
+
             <ListView
                 x:Name="EventsList"
-                Grid.Row="1"
-                SelectionMode="None">
+                Grid.Row="2"
+                SelectionMode="Single"
+                SelectionChanged="OnEventSelectionChanged">
                 <ListView.ItemTemplate>
                     <DataTemplate>
                         <Grid Padding="0,10" ColumnSpacing="14">

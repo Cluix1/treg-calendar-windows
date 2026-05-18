@@ -51,6 +51,12 @@ The first native auth slice is in place:
 - Supabase sessions are stored with Windows Password Vault.
 - The sync service reads access tokens through `IAccessTokenProvider`.
 
+The first local editing slice is in place:
+
+- Quick-add creates an event in SQLite and queues a `create` mutation.
+- Selecting a synced event lets you save a title change or queue a delete.
+- New local events must sync once before edit/delete mutations are allowed, because the server needs a remote event ID for those operations.
+
 Before using login locally, set the public Supabase publishable key:
 
 ```powershell

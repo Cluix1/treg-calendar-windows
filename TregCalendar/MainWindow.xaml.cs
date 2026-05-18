@@ -1,5 +1,8 @@
 using Microsoft.UI.Xaml;
+using Microsoft.UI.Xaml.Controls;
+using System.Text.Json;
 using TregCalendar.Auth;
+using TregCalendar.Core;
 using TregCalendar.Data;
 using TregCalendar.Remote;
 using TregCalendar.Sync;
@@ -17,6 +20,8 @@ namespace TregCalendar
         public MainWindow()
         {
             InitializeComponent();
+            EventDateInput.Date = DateTimeOffset.Now;
+            EventTimeInput.Time = DateTimeOffset.Now.TimeOfDay;
             _repository = new LocalCalendarRepository(_database);
             _authClient = new SupabaseAuthClient(new HttpClient(), new WindowsCredentialSessionStore());
             _syncService = new CalendarSyncService(
@@ -77,6 +82,132 @@ namespace TregCalendar
             await RunUiActionAsync(RefreshEventsAsync);
         }
 
+        private void OnEventSelectionChanged(object sender, SelectionChangedEventArgs args)
+        {
+            if (EventsList.SelectedItem is EventListItem item)
+            {
+                EventTitleInput.Text = item.Event.Title;
+                var eventDate = item.Event.StartsAt ?? item.Event.DueAt ?? item.Event.EndsAt;
+                if (eventDate is not null)
+                {
+                    var localDate = eventDate.Value.ToLocalTime();
+                    EventDateInput.Date = localDate;
+                    EventTimeInput.Time = localDate.TimeOfDay;
+                }
+            }
+        }
+
+        private async void OnAddEventClicked(object sender, RoutedEventArgs args)
+        {
+            await RunUiActionAsync(async () =>
+            {
+                var title = CleanTitle(EventTitleInput.Text);
+                if (title.Length == 0)
+                {
+                    AuthStatusText.Text = "Enter an event title first.";
+                    return;
+                }
+
+                var events = await _repository.GetEventsAsync();
+                var calendarId = events.FirstOrDefault()?.CalendarId;
+                if (calendarId is null)
+                {
+                    AuthStatusText.Text = "Sync once before creating a local event.";
+                    return;
+                }
+
+                var startsAt = EventDateInput.Date.Date.Add(EventTimeInput.Time);
+                var endsAt = startsAt.AddHours(1);
+                var localEvent = new LocalCalendarEvent
+                {
+                    CalendarId = calendarId.Value,
+                    Title = title,
+                    StartsAt = startsAt.ToUniversalTime(),
+                    EndsAt = endsAt.ToUniversalTime(),
+                    DueAt = startsAt.ToUniversalTime(),
+                    Status = "active"
+                };
+
+                await _repository.SaveEventWithMutationAsync(
+                    localEvent,
+                    PendingMutationOperation.Create,
+                    JsonSerializer.Serialize(new
+                    {
+                        calendar_id = calendarId.Value,
+                        title,
+                        starts_at = startsAt.ToUniversalTime().ToString("O"),
+                        ends_at = endsAt.ToUniversalTime().ToString("O"),
+                        due_at = startsAt.ToUniversalTime().ToString("O"),
+                        all_day = false,
+                        status = "active"
+                    }));
+
+                AuthStatusText.Text = "Event saved locally. Click Sync to upload it.";
+                EventTitleInput.Text = string.Empty;
+                await RefreshEventsAsync();
+            });
+        }
+
+        private async void OnSaveEventClicked(object sender, RoutedEventArgs args)
+        {
+            await RunUiActionAsync(async () =>
+            {
+                if (EventsList.SelectedItem is not EventListItem item)
+                {
+                    AuthStatusText.Text = "Select an event to edit.";
+                    return;
+                }
+
+                if (item.Event.RemoteId is null)
+                {
+                    AuthStatusText.Text = "Sync this new event before editing it.";
+                    return;
+                }
+
+                var title = CleanTitle(EventTitleInput.Text);
+                if (title.Length == 0)
+                {
+                    AuthStatusText.Text = "Event title cannot be empty.";
+                    return;
+                }
+
+                await _repository.SaveEventWithMutationAsync(
+                    item.Event with { Title = title },
+                    PendingMutationOperation.Update,
+                    JsonSerializer.Serialize(new { title }));
+
+                AuthStatusText.Text = "Event title saved locally. Click Sync to upload it.";
+                await RefreshEventsAsync();
+            });
+        }
+
+        private async void OnDeleteEventClicked(object sender, RoutedEventArgs args)
+        {
+            await RunUiActionAsync(async () =>
+            {
+                if (EventsList.SelectedItem is not EventListItem item)
+                {
+                    AuthStatusText.Text = "Select an event to delete.";
+                    return;
+                }
+
+                if (item.Event.RemoteId is null)
+                {
+                    AuthStatusText.Text = "Sync this new event before deleting it.";
+                    return;
+                }
+
+                await _repository.SaveEventWithMutationAsync(
+                    item.Event,
+                    PendingMutationOperation.Delete,
+                    "{}");
+
+                AuthStatusText.Text = "Event deleted locally. Click Sync to upload it.";
+                EventTitleInput.Text = string.Empty;
+                await RefreshEventsAsync();
+            });
+        }
+
         private async Task RefreshAuthStatusAsync()
         {
             var session = await _authClient.GetCurrentSessionAsync();
@@ -119,6 +250,14 @@ namespace TregCalendar
             SyncButton.IsEnabled = !isBusy;
             SignOutButton.IsEnabled = !isBusy;
             RefreshButton.IsEnabled = !isBusy;
+            AddEventButton.IsEnabled = !isBusy;
+            SaveEventButton.IsEnabled = !isBusy;
+            DeleteEventButton.IsEnabled = !isBusy;
+        }
+
+        private static string CleanTitle(string value)
+        {
+            return string.Join(" ", value.Split(default(string[]), StringSplitOptions.RemoveEmptyEntries)).Trim();
         }
     }
 }

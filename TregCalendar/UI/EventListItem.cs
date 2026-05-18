@@ -4,6 +4,8 @@ namespace TregCalendar.UI;
 
 public sealed record EventListItem
 {
+    public required LocalCalendarEvent Event { get; init; }
+
     public required string Title { get; init; }
 
     public required string DateText { get; init; }
@@ -24,6 +26,7 @@ public sealed record EventListItem
 
         return new EventListItem
         {
+            Event = calendarEvent,
             Title = string.IsNullOrWhiteSpace(calendarEvent.Title) ? "Untitled event" : calendarEvent.Title,
             DateText = dateText,
             TimeText = timeText,
@@ -64,6 +67,6 @@ public sealed record EventListItem
             .Select(part => part!)
             .ToArray();
 
-        return parts.Length == 0 ? "Treg Calendar" : string.Join(" · ", parts);
+        return parts.Length == 0 ? "Treg Calendar" : string.Join(" - ", parts);
     }
 }
